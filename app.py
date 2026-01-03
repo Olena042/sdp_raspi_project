@@ -2,15 +2,26 @@ import os
 import random
 import platform
 import socket
+import threading
+import time
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify
 import psutil
+import requests
 
 # Configuration
 MOCK_SENSORS = os.getenv("MOCK_SENSORS", "True").lower() == "true"
 DHT_PIN = int(os.getenv("DHT_PIN", 4))
 PORT = int(os.getenv("PORT", 5000))
+
+# ThingSpeak Configuration
+THINGSPEAK_API_KEY = os.getenv("THINGSPEAK_API_KEY", "3U5DFFDLYTB512Y0")
+THINGSPEAK_URL = "https://api.thingspeak.com/update"
+PUBLISH_INTERVAL = int(os.getenv("PUBLISH_INTERVAL", 20))  # seconds
+
+# Track last publish status
+last_publish = {"status": None, "timestamp": None, "temperature": None, "humidity": None}
 
 # Initialize sensor (only on Raspberry Pi)
 dht_device = None
@@ -25,6 +36,70 @@ if not MOCK_SENSORS:
         print("Using mock mode instead")
 
 app = Flask(__name__)
+
+
+# --- ThingSpeak Publishing ---
+
+def get_sensor_readings():
+    """Get current temperature and humidity readings."""
+    if MOCK_SENSORS or dht_device is None:
+        temp = round(random.uniform(18.0, 28.0), 1)
+        humidity = round(random.uniform(30.0, 70.0), 1)
+    else:
+        try:
+            temp = dht_device.temperature
+            humidity = dht_device.humidity
+        except Exception:
+            temp = None
+            humidity = None
+    return temp, humidity
+
+
+def publish_to_thingspeak():
+    """Publish sensor data to ThingSpeak."""
+    global last_publish
+    temp, humidity = get_sensor_readings()
+
+    if temp is None or humidity is None:
+        last_publish["status"] = "error"
+        last_publish["timestamp"] = datetime.now(timezone.utc).isoformat()
+        return False
+
+    try:
+        params = {
+            "api_key": THINGSPEAK_API_KEY,
+            "field1": temp,
+            "field2": humidity
+        }
+        response = requests.get(THINGSPEAK_URL, params=params, timeout=10)
+
+        if response.status_code == 200 and response.text != "0":
+            last_publish["status"] = "success"
+            last_publish["entry_id"] = response.text
+        else:
+            last_publish["status"] = "failed"
+
+        last_publish["timestamp"] = datetime.now(timezone.utc).isoformat()
+        last_publish["temperature"] = temp
+        last_publish["humidity"] = humidity
+        return last_publish["status"] == "success"
+    except Exception as e:
+        last_publish["status"] = f"error: {str(e)}"
+        last_publish["timestamp"] = datetime.now(timezone.utc).isoformat()
+        return False
+
+
+def thingspeak_publisher():
+    """Background thread that publishes to ThingSpeak periodically."""
+    while True:
+        publish_to_thingspeak()
+        print(f"Published to ThingSpeak: {last_publish}")
+        time.sleep(PUBLISH_INTERVAL)
+
+
+# Start background publisher thread
+publisher_thread = threading.Thread(target=thingspeak_publisher, daemon=True)
+publisher_thread.start()
 
 
 # --- Sensor Endpoints ---
@@ -113,6 +188,17 @@ def get_health():
     })
 
 
+# --- ThingSpeak Endpoints ---
+
+@app.route("/api/thingspeak/status")
+def get_thingspeak_status():
+    return jsonify({
+        "last_publish": last_publish,
+        "publish_interval_seconds": PUBLISH_INTERVAL,
+        "channel_url": "https://thingspeak.com/channels/YOUR_CHANNEL_ID"
+    })
+
+
 # --- Root Endpoint ---
 
 @app.route("/")
@@ -121,6 +207,7 @@ def index():
         "name": "Raspberry Pi Sensor API",
         "version": "1.0.0",
         "mock_mode": MOCK_SENSORS,
+        "thingspeak_enabled": True,
         "endpoints": [
             "/api/sensors/temperature",
             "/api/sensors/humidity",
@@ -128,7 +215,8 @@ def index():
             "/api/system/info",
             "/api/system/cpu",
             "/api/system/memory",
-            "/api/system/health"
+            "/api/system/health",
+            "/api/thingspeak/status"
         ]
     })
 

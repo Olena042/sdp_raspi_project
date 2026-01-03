@@ -17,10 +17,12 @@ This project is for the Software Development Processes (SDP) subject. It provide
 
 ```
 sdp_raspi_project/
-├── app.py              # Flask API application
-├── requirements.txt    # Python dependencies
-├── Dockerfile          # Multi-stage container build
-├── docker-compose.yml  # Container orchestration
+├── app.py               # Flask API application
+├── requirements.txt     # Python dependencies
+├── requirements-dev.txt # Development dependencies (linting)
+├── .flake8              # Flake8 configuration
+├── Dockerfile           # Multi-stage container build
+├── docker-compose.yml   # Container orchestration
 └── README.md
 ```
 
@@ -126,6 +128,13 @@ docker-compose up -d
 
 # Hardware mode (Raspberry Pi with sensor)
 docker-compose --profile hardware up -d sensor-api-hardware
+```
+
+## Linting
+
+```bash
+pip install flake8
+flake8 app.py
 ```
 
 ## CI/CD

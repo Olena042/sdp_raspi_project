@@ -1,10 +1,10 @@
-# Raspberry Pi Sensor API
+# Raspberry Pi Sensor API 
 
 A REST API for Raspberry Pi that exposes sensor data and system information.
 
 ## Team Members
 - Olena Pashchenko
-- Christian Occampo Torres
+- Christian Ocampo Torres
 
 ## Project Description
 
@@ -17,8 +17,10 @@ This project is for the Software Development Processes (SDP) subject. It provide
 
 ```
 sdp_raspi_project/
-├── app.py              # The entire application
-├── requirements.txt    # Dependencies
+├── app.py              # Flask API application
+├── requirements.txt    # Python dependencies
+├── Dockerfile          # Multi-stage container build
+├── docker-compose.yml  # Container orchestration
 └── README.md
 ```
 
@@ -93,3 +95,47 @@ When deploying to Raspberry Pi:
 3. Set `MOCK_SENSORS=False`
 
 ## Docker
+
+### Building the Image
+
+```bash
+# Build for local architecture
+docker build -t raspi-sensor-api .
+
+# Build for Raspberry Pi (ARM64) from another machine
+docker buildx build --platform linux/arm64 -t raspi-sensor-api .
+```
+
+### Running the Container
+
+```bash
+# Run in mock mode (development)
+docker run -p 5000:5000 raspi-sensor-api
+
+# Run with real sensor (Raspberry Pi)
+docker run -p 5000:5000 --privileged \
+  -e MOCK_SENSORS=False \
+  raspi-sensor-api
+```
+
+### Docker Compose
+
+```bash
+# Mock mode (development)
+docker-compose up -d
+
+# Hardware mode (Raspberry Pi with sensor)
+docker-compose --profile hardware up -d sensor-api-hardware
+```
+
+## CI/CD
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **Build & Test**: Runs on every push and pull request
+- **Docker Build**: Builds and pushes container image to GHCR on main branch
+
+## Repository Links
+
+- **GitHub**: https://github.com/Olena042/sdp_raspi_project
+- **Container Registry**: ghcr.io/olena042/sdp_raspi_project

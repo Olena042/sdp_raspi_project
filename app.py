@@ -23,6 +23,9 @@ PUBLISH_INTERVAL = int(os.getenv("PUBLISH_INTERVAL", 20))  # seconds
 # Track last publish status
 last_publish = {"status": None, "timestamp": None, "temperature": None, "humidity": None}
 
+# Mock sensor state (for realistic gradual changes)
+mock_state = {"temperature": 22.0, "humidity": 50.0}
+
 # Initialize sensor (only on Raspberry Pi)
 dht_device = None
 if not MOCK_SENSORS:
@@ -43,8 +46,13 @@ app = Flask(__name__)
 def get_sensor_readings():
     """Get current temperature and humidity readings."""
     if MOCK_SENSORS or dht_device is None:
-        temp = round(random.uniform(18.0, 28.0), 1)
-        humidity = round(random.uniform(30.0, 70.0), 1)
+        # Gradual random walk for realistic mock data
+        mock_state["temperature"] += random.uniform(-0.5, 0.5)
+        mock_state["temperature"] = max(18.0, min(28.0, mock_state["temperature"]))
+        mock_state["humidity"] += random.uniform(-2.0, 2.0)
+        mock_state["humidity"] = max(30.0, min(70.0, mock_state["humidity"]))
+        temp = round(mock_state["temperature"], 1)
+        humidity = round(mock_state["humidity"], 1)
     else:
         try:
             temp = dht_device.temperature
@@ -106,35 +114,29 @@ publisher_thread.start()
 
 @app.route("/api/sensors/temperature")
 def get_temperature():
-    if MOCK_SENSORS or dht_device is None:
-        temp = round(random.uniform(18.0, 28.0), 1)
-        return jsonify({"value": temp, "unit": "celsius", "mock": True})
-    try:
-        temp = dht_device.temperature
-        return jsonify({"value": temp, "unit": "celsius", "mock": False})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    temp, _ = get_sensor_readings()
+    if temp is None:
+        return jsonify({"error": "Failed to read sensor"}), 500
+    mock = MOCK_SENSORS or dht_device is None
+    return jsonify({"value": temp, "unit": "celsius", "mock": mock})
 
 
 @app.route("/api/sensors/humidity")
 def get_humidity():
-    if MOCK_SENSORS or dht_device is None:
-        humidity = round(random.uniform(30.0, 70.0), 1)
-        return jsonify({"value": humidity, "unit": "percent", "mock": True})
-    try:
-        humidity = dht_device.humidity
-        return jsonify({"value": humidity, "unit": "percent", "mock": False})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    _, humidity = get_sensor_readings()
+    if humidity is None:
+        return jsonify({"error": "Failed to read sensor"}), 500
+    mock = MOCK_SENSORS or dht_device is None
+    return jsonify({"value": humidity, "unit": "percent", "mock": mock})
 
 
 @app.route("/api/sensors/all")
 def get_all_sensors():
-    temp_response = get_temperature().get_json()
-    humidity_response = get_humidity().get_json()
+    temp, humidity = get_sensor_readings()
+    mock = MOCK_SENSORS or dht_device is None
     return jsonify({
-        "temperature": temp_response,
-        "humidity": humidity_response,
+        "temperature": {"value": temp, "unit": "celsius", "mock": mock},
+        "humidity": {"value": humidity, "unit": "percent", "mock": mock},
         "timestamp": datetime.now(timezone.utc).isoformat()
     })
 

@@ -1,0 +1,27 @@
+services:
+  sensor-api:
+    build: .
+    image: raspi-sensor-api:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - MOCK_SENSORS=${MOCK_SENSORS:-True}
+      - DHT_PIN=${DHT_PIN:-4}
+      - PORT=5000
+    restart: unless-stopped
+
+  # Use this service for real hardware on Raspberry Pi
+  sensor-api-hardware:
+    build: .
+    image: raspi-sensor-api:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - MOCK_SENSORS=False
+      - DHT_PIN=${DHT_PIN:-4}
+      - PORT=5000
+    privileged: true
+    user: root
+    restart: unless-stopped
+    profiles:
+      - hardware

@@ -226,4 +226,6 @@ def index():
 if __name__ == "__main__":
     print(f"Starting Raspberry Pi Sensor API on port {PORT}")
     print(f"Mock mode: {MOCK_SENSORS}")
-    app.run(host="0.0.0.0", port=PORT, debug=True)
+    # Disable reloader in hardware mode to prevent GPIO conflicts
+    use_reloader = MOCK_SENSORS
+    app.run(host="0.0.0.0", port=PORT, debug=True, use_reloader=use_reloader)

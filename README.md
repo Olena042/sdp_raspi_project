@@ -25,6 +25,7 @@ sdp_raspi_project/
 ├── requirements.txt     # Python dependencies
 ├── requirements-dev.txt # Development dependencies (linting)
 ├── .flake8              # Flake8 configuration
+├── tests/               # pytest test suite
 ├── Dockerfile           # Multi-stage container build
 ├── docker-compose.yml   # Container orchestration
 └── README.md
@@ -170,6 +171,18 @@ pip install flake8
 flake8 app.py
 ```
 
+## Testing
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Run all tests
+pytest tests/ -v
+```
+
+Tests run in mock mode automatically, so no hardware is required.
+
 ## CI/CD
 
 This project uses GitHub Actions for continuous integration and deployment.
@@ -177,12 +190,13 @@ This project uses GitHub Actions for continuous integration and deployment.
 ### Pipeline Stages
 
 1. **Lint**: Runs flake8 to check code quality
-2. **Build & Push**: Builds Docker image and pushes to GitHub Container Registry
+2. **Test**: Runs pytest test suite
+3. **Build & Push**: Builds Docker image and pushes to registries (requires lint and test to pass)
 
 ### Triggers
 
-- **Push to main**: Runs full pipeline (lint + build + push to registry)
-- **Pull requests**: Runs lint + build (no push)
+- **Push to main**: Runs full pipeline (lint + test + build + push)
+- **Pull requests**: Runs lint + test + build (no push)
 
 ### Workflow File
 

@@ -10,6 +10,7 @@ A REST API for Raspberry Pi that exposes sensor data and system information.
 
 This project is for the Software Development Processes (SDP) subject. It provides a Flask-based REST API that:
 - Reads temperature and humidity from a DHT11 sensor
+- Publishes sensor data to ThingSpeak for visualization
 - Provides system information (CPU, memory)
 - Supports mock mode for development without hardware
 
@@ -17,6 +18,9 @@ This project is for the Software Development Processes (SDP) subject. It provide
 
 ```
 sdp_raspi_project/
+├── .github/
+│   └── workflows/
+│       └── ci.yml       # CI/CD pipeline
 ├── app.py               # Flask API application
 ├── requirements.txt     # Python dependencies
 ├── requirements-dev.txt # Development dependencies (linting)
@@ -47,10 +51,15 @@ The API will be available at `http://localhost:5000`
 Set environment variables to customize:
 
 ```bash
+# Sensor settings
 export MOCK_SENSORS=True   # Use fake sensor data (default)
 export MOCK_SENSORS=False  # Use real DHT11 sensor
 export DHT_PIN=4           # GPIO pin for sensor
 export PORT=5000           # Server port
+
+# ThingSpeak integration
+export THINGSPEAK_API_KEY=your_api_key  # ThingSpeak write API key
+export PUBLISH_INTERVAL=20              # Publish interval in seconds
 ```
 
 ## API Endpoints
@@ -65,6 +74,7 @@ export PORT=5000           # Server port
 | GET | `/api/system/cpu` | Get CPU usage and temperature |
 | GET | `/api/system/memory` | Get memory usage |
 | GET | `/api/system/health` | Health check endpoint |
+| GET | `/api/thingspeak/status` | Get ThingSpeak publish status |
 
 ## Example Response
 
@@ -94,7 +104,30 @@ When deploying to Raspberry Pi:
    pip install adafruit-circuitpython-dht RPi.GPIO
    ```
 
-3. Set `MOCK_SENSORS=False`
+3. Run with sudo (required for GPIO access):
+   ```bash
+   sudo MOCK_SENSORS=False venv/bin/python3 app.py
+   ```
+
+## ThingSpeak Integration
+
+The API automatically publishes sensor data to ThingSpeak every 20 seconds.
+
+1. Create a ThingSpeak channel at https://thingspeak.com
+2. Get your Write API Key from the channel settings
+3. Set the environment variable:
+   ```bash
+   export THINGSPEAK_API_KEY=your_write_api_key
+   ```
+
+Data fields:
+- **Field 1**: Temperature (°C)
+- **Field 2**: Humidity (%)
+
+Check publish status:
+```bash
+curl http://localhost:5000/api/thingspeak/status
+```
 
 ## Docker
 
@@ -139,10 +172,21 @@ flake8 app.py
 
 ## CI/CD
 
-This project uses GitHub Actions for continuous integration and deployment:
+This project uses GitHub Actions for continuous integration and deployment.
 
-- **Build & Test**: Runs on every push and pull request
-- **Docker Build**: Builds and pushes container image to GHCR on main branch
+### Pipeline Stages
+
+1. **Lint**: Runs flake8 to check code quality
+2. **Build & Push**: Builds Docker image and pushes to GitHub Container Registry
+
+### Triggers
+
+- **Push to main**: Runs full pipeline (lint + build + push to registry)
+- **Pull requests**: Runs lint + build (no push)
+
+### Workflow File
+
+See `.github/workflows/ci.yml` for the pipeline configuration.
 
 ## Repository Links
 

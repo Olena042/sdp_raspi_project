@@ -202,6 +202,43 @@ This project uses GitHub Actions for continuous integration and deployment.
 
 See `.github/workflows/ci.yml` for the pipeline configuration.
 
+## Git Branch Strategy
+
+This project uses a simplified GitHub Flow branching strategy:
+
+```
+main (production)
+  │
+  ├── feature/add-temperature-endpoint
+  ├── feature/thingspeak-integration
+  ├── fix/sensor-reading-bug
+  └── test-set-up-and-ci-improvement
+```
+
+### Branches
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Production-ready code. Protected branch. |
+| `feature/*` | New features and enhancements |
+| `fix/*` | Bug fixes |
+| `test-*` | Testing and CI/CD improvements |
+
+### Workflow
+
+1. Create a feature branch from `main`
+2. Make changes and commit
+3. Push branch and open a Pull Request
+4. CI pipeline runs (lint + test + build)
+5. Review and merge to `main`
+6. CI builds and pushes Docker image to registries
+
+### Branch Protection
+
+The `main` branch is protected:
+- Requires pull request before merging
+- CI checks must pass before merge
+
 ## Repository Links
 
 - **GitHub**: https://github.com/Olena042/sdp_raspi_project

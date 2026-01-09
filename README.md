@@ -164,6 +164,21 @@ docker-compose up -d
 docker-compose --profile hardware up -d sensor-api-hardware
 ```
 
+## Troubleshooting
+
+## Stop and remove containers
+
+```bash
+#To stop running containers and remove them
+docker-compose down
+
+#Verify which containers are running
+docker-compose ps
+
+#Restart all services
+docker-compose restart
+```
+
 ## Linting
 
 ```bash

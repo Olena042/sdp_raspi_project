@@ -206,23 +206,11 @@ See `.github/workflows/ci.yml` for the pipeline configuration.
 
 This project uses a simplified GitHub Flow branching strategy:
 
-```
-main (production)
-  │
-  ├── feature/add-temperature-endpoint
-  ├── feature/thingspeak-integration
-  ├── fix/sensor-reading-bug
-  └── test-set-up-and-ci-improvement
-```
-
-### Branches
-
 | Branch | Purpose |
-|--------|---------|
+|---------|-------------------------------------------|
 | `main` | Production-ready code. Protected branch. |
-| `feature/*` | New features and enhancements |
-| `fix/*` | Bug fixes |
-| `test-*` | Testing and CI/CD improvements |
+| `*` | New features, enhancements, and bug fixes |
+| `test-*`| Testing and CI/CD improvements |
 
 ### Workflow
 
@@ -243,3 +231,4 @@ The `main` branch is protected:
 
 - **GitHub**: https://github.com/Olena042/sdp_raspi_project
 - **Container Registry**: ghcr.io/olena042/sdp_raspi_project
+- **Container Registry**: https://hub.docker.com/repository/docker/olenapashchenko/raspi-sensor-api/general
